@@ -30,7 +30,7 @@ jobs:
         run: pixi run -e default toml-fmt-check
 
       - name: Check PGH004 explicitly
-        run: pixi run -e default uv run ruff check . --select PGH004
+        run: pixi run -e default uvx ruff==0.16.9 check . --select PGH004
 
       - name: Compile changed Python files
         run: |
