@@ -1,0 +1,28 @@
+name: PGH004 validation
+
+on:
+  push:
+    branches:
+      - ci/pgh004-validation
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.40.0
+          cache: true
+
+      - name: Run repository pre-commit checks
+        run: pixi run pre-commit-all
+
+      - name: Compile changed Python files
+        run: |
+          python -m compileall -q             kornia/models/common.py             kornia/models/yunet/model.py             kornia/models/sam/architecture/image_encoder.py
