@@ -20,6 +20,9 @@ jobs:
           pixi-version: v0.40.0
           cache: true
 
+      - name: Install development dependencies
+        run: pixi run -e default install
+
       - name: Run repository pre-commit checks
         run: pixi run pre-commit-all
 
