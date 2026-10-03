@@ -26,6 +26,12 @@ jobs:
       - name: Run repository pre-commit checks
         run: pixi run pre-commit-all
 
+      - name: Check TOML formatting
+        run: pixi run -e default toml-fmt-check
+
+      - name: Check PGH004 explicitly
+        run: pixi run -e default uv run ruff check . --select PGH004
+
       - name: Compile changed Python files
         run: |
           python -m compileall -q             kornia/models/common.py             kornia/models/yunet/model.py             kornia/models/sam/architecture/image_encoder.py
