@@ -243,6 +243,7 @@ select = [
   "SIM910",  # dict-get-with-none-default
   "SLOT",  # flake8-slots
   "T10",  # flake8-debugger
+  "T201",  # flake8-print: library code only (see scoped ignore below)
   "TID",  # flake8-tidy-imports
   "UP",  # pyupgrade
   "W",  # pycodestyle
@@ -320,6 +321,7 @@ max-returns = 13  # Recommended: 6
 max-statements = 64  # Recommended: 50
 
 [tool.ruff.lint.per-file-ignores]
+"!kornia/**.py" = ["T201"]  # Allow prints in demos, tests, and scripts
 "*/__init__.py" = ["F401", "F403"]  # Allow unused imports and star imports
 "benchmarks/*" = [
   "BLE",
