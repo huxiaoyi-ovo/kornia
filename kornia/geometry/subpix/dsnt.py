@@ -82,21 +82,20 @@ def spatial_softmax2d(input: torch.Tensor, temperature: Optional[torch.Tensor | 
     if temperature is None:
         temperature = 1.0
     _check_positive_temperature(temperature)
-    if isinstance(temperature, torch.Tensor):
-        temperature = temperature.to(device=input.device, dtype=input.dtype)
     x = input.reshape(batch_size, channels, height * width)
-    # An integer map is divided in the default floating dtype, as ``x / temperature`` does; the shift below would wrap
-    # in its own dtype (``uint8``).
     if not x.is_floating_point():
         x = x.to(torch.get_default_dtype())
+    elif x.dtype in (torch.float16, torch.bfloat16):
+        x = x.float()
 
-    # Softmax is invariant to a shift by a constant per map. Subtracting the maximum leaves every logit at or below
-    # zero, so dividing by a sharp temperature cannot overflow the input dtype (``max|logit| / temperature > 65504``
-    # is reachable in float16) before softmax gets a chance to stabilize the values. The shift is a constant, so it
-    # takes no gradient; an empty map has nothing to shift and no maximum.
-    if height * width > 0:
-        x = x - x.amax(dim=-1, keepdim=True).detach()
+    if isinstance(temperature, torch.Tensor):
+        temperature = temperature.to(device=x.device, dtype=x.dtype)
+
+    # Let softmax stabilize logits after temperature scaling. For half precision,
+    # promote before dividing to avoid overflow in the scaled logits.
     x_soft = F.softmax(x / temperature, dim=-1)
+    if input.is_floating_point():
+        x_soft = x_soft.to(input.dtype)
 
     return x_soft.view(batch_size, channels, height, width)
 

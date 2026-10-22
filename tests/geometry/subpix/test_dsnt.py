@@ -256,6 +256,23 @@ class TestSpatialSoftmax2d(BaseTester):
         coordinates = kornia.geometry.subpix.spatial_soft_argmax2d(heatmap, temperature, normalized_coordinates=False)
         self.assert_close(coordinates, torch.tensor([[[32.0, 32.0]]], device=device, dtype=heatmap.dtype))
 
+    def test_float16_extreme_range_keeps_probability_ratio(self, device):
+        # After scaling, the exact logits are [-1, 1]; shifting in float16 first overflows.
+        heatmap = torch.tensor([[[[-65504.0, 65504.0]]]], device=device, dtype=torch.float16)
+        temperature = torch.tensor(65504.0, device=device, dtype=torch.float16)
+        actual = kornia.geometry.subpix.spatial_softmax2d(heatmap, temperature)
+        expected = torch.tensor([[[[0.1192, 0.8808]]]], device=device, dtype=torch.float16)
+        self.assert_close(actual, expected)
+        assert actual.dtype == heatmap.dtype
+
+    def test_per_pixel_temperature_preserves_scaled_logits(self, device):
+        # Softmax([2 / 1, 4 / 10]) must not shift [2, 4] before per-position scaling.
+        heatmap = torch.tensor([[[[2.0, 4.0]]]], device=device)
+        temperature = torch.tensor([1.0, 10.0], device=device)
+        actual = kornia.geometry.subpix.spatial_softmax2d(heatmap, temperature)
+        expected = torch.softmax(torch.tensor([2.0, 0.4], device=device), dim=0).reshape_as(heatmap)
+        self.assert_close(actual, expected)
+
 
 class TestSpatialExpectation2d(BaseTester):
     @pytest.fixture(
