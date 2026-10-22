@@ -91,8 +91,12 @@ def spatial_softmax2d(input: torch.Tensor, temperature: Optional[torch.Tensor | 
     if isinstance(temperature, torch.Tensor):
         temperature = temperature.to(device=x.device, dtype=x.dtype)
 
-    # Let softmax stabilize logits after temperature scaling. For half precision,
-    # promote before dividing to avoid overflow in the scaled logits.
+    # A constant temperature permits max-shifting before division, preventing
+    # overflow in the scaled logits. With spatially varying temperature, the
+    # shift must not change each position's relative scale.
+    if not isinstance(temperature, torch.Tensor) or temperature.ndim == 0 or temperature.shape[-1] == 1:
+        if height * width > 0:
+            x = x - x.amax(dim=-1, keepdim=True).detach()
     x_soft = F.softmax(x / temperature, dim=-1)
     if input.is_floating_point():
         x_soft = x_soft.to(input.dtype)

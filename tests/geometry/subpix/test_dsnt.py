@@ -265,6 +265,15 @@ class TestSpatialSoftmax2d(BaseTester):
         self.assert_close(actual, expected)
         assert actual.dtype == heatmap.dtype
 
+    def test_float32_sharp_temperature_does_not_create_nan(self, device):
+        # Unshifted [0, 1e20] / 1e-20 contains +inf even though softmax is well defined.
+        heatmap = torch.tensor([[[[0.0, 1e20]]]], device=device, dtype=torch.float32)
+        temperature = torch.tensor(1e-20, device=device, dtype=torch.float32)
+        actual = kornia.geometry.subpix.spatial_softmax2d(heatmap, temperature)
+        expected = torch.tensor([[[[0.0, 1.0]]]], device=device, dtype=torch.float32)
+        self.assert_close(actual, expected)
+        assert torch.isfinite(actual).all()
+
     def test_per_pixel_temperature_preserves_scaled_logits(self, device):
         # Softmax([2 / 1, 4 / 10]) must not shift [2, 4] before per-position scaling.
         heatmap = torch.tensor([[[[2.0, 4.0]]]], device=device)
